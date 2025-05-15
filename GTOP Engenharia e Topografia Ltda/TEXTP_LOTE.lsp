@@ -1,0 +1,27 @@
+;; Coloca numero do lote com numeração sequencial
+
+(defun c:NLOTE ( / olcmdecho escala ponto i PONTO DESC COTA)
+        (setq PI 3.14159265358979323846264)
+	(setq olcmdecho (getvar "cmdecho"))
+	(setvar "cmdecho" 0) 
+	(setq escala (getreal "Escala do desenho: "))
+        (setq escala (/ escala 1000.0))
+        (setq i (getint "Número inicial: "))
+        (setvar "osmode" 512)
+        (setq ROTA (getangle "Escolha a rotação:"))
+        (setq ROTA (/(* ROTA 180.0) PI))
+	(while (setq Pto_bloco (Getpoint "Selecione o Ponto: " )) ;; primeiro while 
+                (if (< i 10)
+                  (setq DESC (strcat "0" (itoa i)))
+                  (setq DESC (itoa i))
+                ) 
+	        (command "_.layer" "m" "TXT_LOTE_TOPOGRAFICO" "")
+                (setvar "osmode" 0)
+      		(command "_.insert" "T:\\Biblioteca CAD\\Blocos\\TOPOGRAFIA\\NOME_LOTE.dwg" Pto_bloco escala "" ROTA DESC)
+                (setq i (1+ i))
+                (setvar "osmode" 512)
+	) ;;fim do primeiro if
+	(setvar "cmdecho" olcmdecho)
+	(princ)
+)
+(princ "\nDigite 'NLOTE' para iniciar")

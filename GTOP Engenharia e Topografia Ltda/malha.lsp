@@ -1,0 +1,125 @@
+(defun LEROY (/ regua fator h)
+ (prompt "\nAJUSTA AS LETRAS COM O PADRAO LEROY")
+ (initget 1  "40 50 60 80 100 120 140 175 200")
+ (setq regua (getint "\nTamanho da Regua (40 50 60 80 100 120 140 175 200): ")
+       ESCALA (getreal "Escala do desenho: ")
+ )
+ (cond ((= regua  40) (setq h 1.0))
+       ((= regua  50) (setq h 1.3))
+       ((= regua  60) (setq h 1.6))
+       ((= regua  80) (setq h 2.0))
+       ((= regua 100) (setq h 2.5))
+       ((= regua 120) (setq h 3.0))
+       ((= regua 140) (setq h 3.5))
+       ((= regua 175) (setq h 4.0))
+       ((= regua 200) (setq h 4.5))
+ )
+ (setq fator (/ escala 1000.0))
+ (if (< regua 201)
+   (setvar "textsize" (* h fator))
+   (setvar "textsize" 1.6)
+  )
+)
+(defun c:malha ()
+	
+	(setq oldangbase (getvar "angbase"))
+	(setvar "angbase" 0)
+	(setq oldangdir (getvar "angdir"))
+	(setvar "angdir" 1)
+	(setq oldosmode (getvar "osmode"))
+	(setvar "osmode" 0)
+	(if (= ESCALA nil) (LEROY))
+	(princ (strcat "\nEscala 1:" (rtos escala 2 0)))
+	
+	(setq pt1 (getpoint "\nPrimeiro canto: "))
+	(setq pt2 (getcorner pt1 "\nSegundo canto: "))
+
+	(setq xpt1 (car pt1))
+	(setq xpt2 (car pt2))
+	(setq ypt1 (cadr pt1))
+	(setq ypt2 (cadr pt2))
+
+	(if (> xpt1 xpt2) 	(progn
+				(setq xmax xpt1) 
+				(setq xmin xpt2) 
+				)
+				(progn
+				(setq xmax xpt2) 
+				(setq xmin xpt1) 
+				)
+	)
+	(if (> ypt1 ypt2) 	(progn
+				(setq ymax ypt1) 
+				(setq ymin ypt2) 
+				)
+				(progn
+				(setq ymax ypt2) 
+				(setq ymin ypt1) 
+				)
+	)
+
+
+
+	(setq passo (/ escala 10))
+
+	(setq primx (* (1+ (fix (/ xmin passo))) passo)) 
+	(setq primy (* (1+ (fix (/ ymin passo))) passo))
+
+	(setq deltax (- xmax primx))
+	(setq deltay (- ymax primy))
+	(setq quantx (1+ (fix (/ deltax passo))))
+	(setq quanty (1+ (fix (/ deltay passo))))
+	(if escolha (princ (strcat "\nCoordenadas (1) à Esquerda ou (2) à Direita e em Baixo? <" (rtos escolha 2 0) ">: "))
+		    (princ (strcat "\nCoordenadas (1) à Esquerda ou (2) à Direita e em Baixo?: "))
+	)
+	(setq op (getint))
+	(if op (setq escolha op))
+
+
+	(cond
+	((= escolha 1) (setq pbase (list xmin ymin)))
+	((= escolha 2) (progn (setq pbase (list xmax ymin)) (setq deltax (* -1 deltax))))
+	)
+	(setq afast (* 0.0017098 escala))
+	(repeat quanty
+	(command "_.layer" "m" "TOP-MALHA_UTM" "")
+	(command "_.line" (list xmin primy) (list xmax primy) "")
+	;(setq northin (strcat "N=" (rtos primy 2 0)))
+        (setq northin (rtos primy 2 0))
+	(command "_.layer" "m" "TOP-TXT_MALHA_UTM" "")
+	(cond 
+	((= escolha 1) (progn
+			(setq ptext (list xmin primy))
+			(setq ptext (cal "ptext-[afast,0]"))
+			(command "_.text" "j" "mr" ptext "" "0" northin)
+		       )
+        )
+	((= escolha 2) (progn
+			(setq ptext (list xmax primy))
+			(setq ptext (cal "ptext+[afast,0]"))
+			(command "_.text" "j" "ml" ptext "" "0" northin)
+		       )
+	)
+	)
+	(setq primy (+ primy passo))
+	)
+	(repeat quantx
+	(command "_.layer" "m" "TOP-MALHA_UTM" "")
+	(command "_.line" (list primx ymin) (list primx ymax) "")
+	;(setq eastin (strcat "E=" (rtos primx 2 0)))
+        (setq eastin (rtos primx 2 0))
+	(command "_.layer" "m" "TOP-TXT_MALHA_UTM" "")
+	(setq ptext (list primx ymin))
+	(setq ptext (cal "ptext-[0,afast]"))
+	(command "_.text" "j" "tc" ptext "" "0" eastin)
+	(setq primx (+ primx passo))
+	)
+	
+
+	(command "_.rectang" pt1 pt2)
+	(setvar "angbase" oldangbase)
+	(setvar "angdir" oldangdir)
+	(setvar "osmode" oldosmode)
+	
+)
+(princ "\nDigite 'malha' para iniciar")
